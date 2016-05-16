@@ -1,4 +1,4 @@
-CustomerID,Unix time,Readable time ,,Location,Latitude,Longitude
+Customer ID,Unix time,Readable time ,,Location,Latitude,Longitude
 01bcb0f79e312031d713a2fc222b7816,1440003600,1:00:00 AM,0,Lorong Ah Soo,1.3527209,103.8829422
 083511bad5e5bb6082345b59f9b47641,1440003600,1:00:00 AM,0,Frankel,1.31656,103.9178494
 060083dca1e490ef2125a821192e383e,1440003602,1:00:02 AM,1,Kallang Way,1.3228246,103.8779514

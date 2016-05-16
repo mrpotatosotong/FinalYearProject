@@ -91,7 +91,7 @@ server <- function(input, output, session) {
     )
     leaflet(subzone) %>%
       addTiles() %>% 
-      addMarkers(data = data, lng = ~ Longitude, lat = ~ Latitude, popup = data$CustomerID, clusterOptions = markerClusterOptions())%>%
+      addMarkers(data = data, lng = ~ Longitude, lat = ~ Latitude, popup = data$Customer.ID, clusterOptions = markerClusterOptions())%>%
       addPolygons(color = "purple")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
