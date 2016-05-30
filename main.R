@@ -10,9 +10,15 @@ library(leaflet)
 library(rgdal)
 library(RMySQL)
 
-dbDisconnect(dbhandle)
-#Creation of database connection
-dbhandle <- dbConnect(MySQL(),dbname="test",username="root")
+#Function GetQuery with SQL and parameter inputs
+getSQL <- function(SQL, parameter){
+  #Creation of database connection
+  dbhandle <- dbConnect(MySQL(),dbname="test",username="root")
+  
+  result <- dbGetQuery(dbhandle, paste(SQL,parameter))
+  dbDisconnect(dbhandle)
+  return(result)
+}
 
 #Creation of URA zone overlay
 subzone <- readOGR(dsn = ".", layer = "URA subzone map final", verbose = F)
@@ -27,8 +33,8 @@ convertLocalTimetoUnix<- function(localtime){
   return(as.POSIXct(strptime(localtime, "%Y-%m-%d %H:%M:%S")))
 }
 
-#Setting up dynamic data from database for time dropdown
-timequery <- dbGetQuery(dbhandle,"SELECT DISTINCT UNIX_TIME FROM starhub;")
+#Setting up data binding from database for time dropdown
+timequery <- getSQL("SELECT DISTINCT UNIX_TIME FROM starhub;",NULL)
 choices <- setNames(timequery$UNIX_TIME,convertUnixToLocalTime(timequery$UNIX_TIME))
 
 #Creation of Shiny UI Web Interface
@@ -49,16 +55,15 @@ ui <- bootstrapPage(
 )
 
 
-
 #Creation of Server
 server <- function(input, output, session) {
-
+  
   #Calling server to output the map 
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    tabledata1<-dbGetQuery(dbhandle, paste("SELECT * FROM starhub WHERE UNIX_TIME=",input$T1))
-    tabledata2<- dbGetQuery(dbhandle, paste("SELECT * FROM starhub WHERE UNIX_TIME=",input$T2))
+    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T1)
+    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T2)
     leaflet(subzone) %>%
       addTiles() %>% 
       addMarkers(data = tabledata1, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions())%>%
@@ -74,7 +79,6 @@ server <- function(input, output, session) {
       addLayersControl(position = 'bottomright',
                        baseGroups = c("Topographical", "Road map", "Satellite"),
                        options = layersControlOptions(collapsed = FALSE))
-    
   })
   
   
