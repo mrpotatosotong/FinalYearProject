@@ -11,12 +11,18 @@ library(rgdal)
 library(RMySQL)
 
 #Function GetQuery with SQL and parameter inputs
-getSQL <- function(SQL, parameter){
+getSQL <- function(SQL, parameter = FALSE){
   #Creation of database connection
   dbhandle <- dbConnect(MySQL(),dbname="test",username="root")
-  
-  result <- dbGetQuery(dbhandle, paste(SQL,parameter))
-  dbDisconnect(dbhandle)
+  if(parameter != FALSE){
+    print(parameter)
+    print(sprintf(SQL,parameter))
+    SQL <- sprintf(SQL,parameter)
+  }
+  result <- dbGetQuery(dbhandle, SQL)
+  cons <- dbListConnections(MySQL())
+  for(con in cons)
+    dbDisconnect(con)
   return(result)
 }
 
@@ -29,13 +35,13 @@ convertUnixToLocalTime <- function(unixtime){
 }
 
 #Declaration of Local Time to Unix Time conversion function
-convertLocalTimetoUnix<- function(localtime){
-  return(as.POSIXct(strptime(localtime, "%Y-%m-%d %H:%M:%S")))
+convertLocalTimetoUnix<- function(localtime,format = "%Y-%m-%d %H:%M:%S"){
+  return(as.POSIXct(strptime(localtime, format)))
 }
 
 #Setting up data binding from database for time dropdown
-timequery <- getSQL("SELECT DISTINCT UNIX_TIME FROM starhub;",NULL)
-choices <- setNames(timequery$UNIX_TIME,convertUnixToLocalTime(timequery$UNIX_TIME))
+timequery <- getSQL("SELECT UNIX_TIME, from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i') AS TS FROM STARHUB s GROUP BY TS ORDER BY TS;")
+choices <- setNames(timequery$UNIX_TIME,timequery$TS)
 
 #Creation of Shiny UI Web Interface
 ui <- bootstrapPage(
@@ -54,6 +60,25 @@ ui <- bootstrapPage(
   
 )
 
+markerList <- iconList(
+  before = makeIcon(
+    iconUrl = "http://leafletjs.com/docs/images/leaf-green.png",
+    iconWidth = 38, iconHeight = 95,
+    iconAnchorX = 22, iconAnchorY = 94,
+    shadowUrl = "http://leafletjs.com/docs/images/leaf-shadow.png",
+    shadowWidth = 50, shadowHeight = 64,
+    shadowAnchorX = 4, shadowAnchorY = 62
+  ),
+  after = makeIcon(
+    iconUrl = "http://leafletjs.com/docs/images/leaf-red.png",
+    iconWidth = 38, iconHeight = 95,
+    iconAnchorX = 22, iconAnchorY = 94,
+    shadowUrl = "http://leafletjs.com/docs/images/leaf-shadow.png",
+    shadowWidth = 50, shadowHeight = 64,
+    shadowAnchorX = 4, shadowAnchorY = 62
+  )
+)
+
 
 #Creation of Server
 server <- function(input, output, session) {
@@ -62,12 +87,13 @@ server <- function(input, output, session) {
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T1)
-    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T2)
+    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T1)
+    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T2)
     leaflet(subzone) %>%
       addTiles() %>% 
-      addMarkers(data = tabledata1, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions())%>%
-      addMarkers(data = tabledata2, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions())%>%
+      
+      addMarkers(data = tabledata1, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
+      addMarkers(data = tabledata2, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
       addPolygons(color = "purple")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
