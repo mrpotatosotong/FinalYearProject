@@ -11,11 +11,15 @@ library(rgdal)
 library(RMySQL)
 
 #Function GetQuery with SQL and parameter inputs
-getSQL <- function(SQL, parameter){
+getSQL <- function(SQL, parameter = FALSE){
   #Creation of database connection
   dbhandle <- dbConnect(MySQL(),dbname="test",username="root")
-  
-  result <- dbGetQuery(dbhandle, paste(SQL,parameter))
+  if(parameter != FALSE){
+    print(parameter)
+    print(sprintf(SQL,parameter))
+    SQL <- sprintf(SQL,parameter)
+  }
+  result <- dbGetQuery(dbhandle, SQL)
   dbDisconnect(dbhandle)
   return(result)
 }
@@ -34,7 +38,7 @@ convertLocalTimetoUnix<- function(localtime){
 }
 
 #Setting up data binding from database for time dropdown
-timequery <- getSQL("SELECT DISTINCT UNIX_TIME FROM starhub;",NULL)
+timequery <- getSQL("SELECT DISTINCT UNIX_TIME FROM starhub;")
 choices <- setNames(timequery$UNIX_TIME,convertUnixToLocalTime(timequery$UNIX_TIME))
 
 #Creation of Shiny UI Web Interface
@@ -62,8 +66,8 @@ server <- function(input, output, session) {
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T1)
-    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=",input$T2)
+    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T1)
+    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T2)
     leaflet(subzone) %>%
       addTiles() %>% 
       addMarkers(data = tabledata1, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions())%>%
