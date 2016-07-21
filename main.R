@@ -105,7 +105,7 @@ server <- function(input, output, session) {
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
       addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
       addLegend(position = 'bottomright',opacity = 0.4, 
-                colors = c('red','green'), 
+                colors = c('green','red'), 
                 labels = c('Starting Time','Ending Time'),
                 title = 'Spatial network analytics')%>%
       addLayersControl(position = 'bottomright',
