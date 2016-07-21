@@ -6,6 +6,7 @@
 #
 
 library(shiny)
+library(shinyBS)
 library(leaflet)
 library(rgdal)
 library(RMySQL)
@@ -40,24 +41,29 @@ convertLocalTimetoUnix<- function(localtime,format = "%Y-%m-%d %H:%M:%S"){
 }
 
 #Setting up data binding from database for time dropdown
-timequery <- getSQL("SELECT UNIX_TIME, from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i') AS TS FROM STARHUB s GROUP BY TS ORDER BY TS;")
+timequery <- getSQL("SELECT UNIX_TIME, from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i') AS TS FROM STARHUB s WHERE minute(from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i')) % 5 = 0 GROUP BY TS ORDER BY TS;")
 choices <- setNames(timequery$UNIX_TIME,timequery$TS)
+
+detect <- function(timing,timing2){
+  if(timing <= timing2){
+    timing = timing2
+  }
+  return(getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",timing))
+}
+
 
 #Creation of Shiny UI Web Interface
 ui <- bootstrapPage(
   tags$style(type = "text/css", "html, body {width:100%;height:100%}"),
   leafletOutput("map", width = "100%", height = "100%"),
-  absolutePanel(top = 10, left = 10,
-                selectInput("T1", 
+  absolutePanel(top = 10, right = 10,
+                selectInput("T1",
                             label = "Time 1:",
-                            choices)
-  ),
-  absolutePanel(top = 10, right  = 10,
-                selectInput("T2", 
+                            choices),
+                selectInput("T2",
                             label = "Time 2:",
-                            choices)
+                            choices,selected = tail(choices,1))
   )
-  
 )
 
 markerList <- iconList(
@@ -88,7 +94,7 @@ server <- function(input, output, session) {
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
     tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T1)
-    tabledata2<- getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T2)
+    tabledata2<- detect(input$T2,input$T1)
     leaflet(subzone) %>%
       addTiles() %>% 
       
@@ -99,8 +105,8 @@ server <- function(input, output, session) {
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
       addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
       addLegend(position = 'bottomright',opacity = 0.4, 
-                colors = 'blue', 
-                labels = 'Singapore',
+                colors = c('green','red'), 
+                labels = c('Starting Time','Ending Time'),
                 title = 'Spatial network analytics')%>%
       addLayersControl(position = 'bottomright',
                        baseGroups = c("Topographical", "Road map", "Satellite"),
