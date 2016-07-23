@@ -5,16 +5,18 @@
 # http://shiny.rstudio.com
 #
 
+
 library(shiny)
 library(shinyBS)
 library(leaflet)
 library(rgdal)
+library(DBI)
 library(RMySQL)
 
 #Function GetQuery with SQL and parameter inputs
 getSQL <- function(SQL, parameter = FALSE){
   #Creation of database connection
-  dbhandle <- dbConnect(MySQL(),dbname="test",username="root")
+  dbhandle <- dbConnect(MySQL(),dbname="test",username="root", password="VFR4cde3")
   if(parameter != FALSE){
     print(parameter)
     print(sprintf(SQL,parameter))
