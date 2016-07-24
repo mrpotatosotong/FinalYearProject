@@ -43,6 +43,7 @@ convertLocalTimetoUnix<- function(localtime,format = "%Y-%m-%d %H:%M:%S"){
 #Setting up data binding from database for time dropdown
 timequery <- getSQL("SELECT UNIX_START, from_unixtime(UNIX_START+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_START, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
 timequery2 <- getSQL("SELECT UNIX_END, from_unixtime(UNIX_END+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_END, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
+
 choices <- setNames(timequery$UNIX_START,timequery$TS)
 choices2 <- setNames(timequery2$UNIX_END,timequery2$TS)
 
@@ -56,7 +57,8 @@ ui <- bootstrapPage(
                             choices),
                 selectInput("T2",
                             label = "Time 2:",
-                            choices2)
+                            choices2),
+                uiOutput("areaSelector")
   )
 )
 
@@ -81,16 +83,52 @@ markerList <- iconList(
 #Creation of Server
 server <- function(input, output, session) {
   
+  output$areaSelector <- renderUI({
+    locationquery <- getSQL(c("SELECT DISTINCT START_LOCATION FROM MOVEMENT WHERE unix_start = ", input$T1, " AND 
+                         UNIX_END = ", input$T2, ";"),TRUE)
+    choicesloc <- setNames(locationquery$START_LOCATION,locationquery$START_LOCATION)
+    selectInput("LOC",
+                label = "Starting Location:",
+                choicesloc)
+  })
   #Calling server to output the map 
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    tabledata1<-getSQL(c("SELECT * FROM MOVEMENT, coordinates WHERE movement.START_LOCATION = coordinates.LOCATION and unix_start = ", input$T1, " ;"),TRUE)
+    if(is.null(input$LOC)){
+      tabledata1<-getSQL(c("SELECT LONGITUDE, LATITUDE, START_LOCATION FROM MOVEMENT, coordinates WHERE 
+                         movement.START_LOCATION = coordinates.LOCATION and 
+                           unix_start = ", input$T1, " AND 
+                           UNIX_END = ", input$T2, " AND 
+                           LONGITUDE > 0;")
+                         ,TRUE)
+      tabledata2<-getSQL(c("SELECT LONGITUDE, LATITUDE, DEST_LOCATION FROM MOVEMENT, coordinates WHERE 
+                           movement.DEST_LOCATION = coordinates.LOCATION and 
+                           unix_start = ", input$T1, " AND 
+                           UNIX_END = ", input$T2," AND 
+                           LONGITUDE > 0;"),TRUE)
+    }else{
+      tabledata1<-getSQL(c("SELECT LONGITUDE, LATITUDE, START_LOCATION FROM MOVEMENT, coordinates WHERE 
+                         movement.START_LOCATION = coordinates.LOCATION and 
+                           unix_start = ", input$T1, " AND 
+                           UNIX_END = ", input$T2, " AND
+                           START_LOCATION = '", input$LOC, "' AND 
+                           LONGITUDE > 0;")
+                         ,TRUE)
+      tabledata2<-getSQL(c("SELECT LONGITUDE, LATITUDE, DEST_LOCATION FROM MOVEMENT, coordinates WHERE 
+                           movement.DEST_LOCATION = coordinates.LOCATION and 
+                           unix_start = ", input$T1, " AND 
+                           UNIX_END = ", input$T2," AND 
+                           START_LOCATION = '", input$LOC, "' AND 
+                           LONGITUDE > 0;"),TRUE)
+    }
+
+                       
     leaflet(subzone) %>%
       addTiles() %>% 
-      addMarkers(data = tabledata1,~ LATITUDE,~ LONGITUDE,popup = ~LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
-      #addMarkers(data = tabledata2,~ LATITUDE,~ LONGITUDE,popup = ~LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
-      addPolygons(color = "purple")%>%
+      addMarkers(data = tabledata1,~ LATITUDE,~ LONGITUDE,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
+      addMarkers(data = tabledata2,~ LATITUDE,~ LONGITUDE,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      addPolygons(color = "white")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
       addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
