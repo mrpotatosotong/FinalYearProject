@@ -9,5 +9,7 @@ CREATE TABLE IF NOT EXISTS `movement` (
 `COUNT` INT NULL
 )  ENGINE=InnoDB;
 
-SELECT count(*) FROM MOVEMENT;
+SELECT * FROM MOVEMENT;
 select * from movement where count > 1 order by count desc;
+SELECT *, substring(COORD, 1, instr(COORD,',')-1) as LONGITUDE, substring(COORD, instr(COORD,',')+1) as LATITUDE FROM movement,coordinates WHERE UNIX_START=1440000000 AND movement.START_LOCATION = coordinates.LOCATION;
+SELECT * FROM MOVEMENT, coordinates WHERE movement.START_LOCATION = coordinates.LOCATION and unix_start = 14400000;

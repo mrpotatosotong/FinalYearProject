@@ -5,6 +5,8 @@
 # http://shiny.rstudio.com
 #
 
+#By MrPotato for FYP AY2016/2017 Semester 3 Year 3. Contact Telegram @iamttl and @ShintoSamy
+
 
 library(shiny)
 library(leaflet)
@@ -53,12 +55,12 @@ ui <- bootstrapPage(
   leafletOutput("map", width = "100%", height = "100%"),
   absolutePanel(top = 10, right = 10,
                 selectInput("T1",
-                            label = "Time 1:",
+                            label = "Start Time (Everyone who is at this location at this time...):",
                             choices),
+                uiOutput("areaSelector"),
                 selectInput("T2",
-                            label = "Time 2:",
-                            choices2),
-                uiOutput("areaSelector")
+                            label = "End Time (...where did they go at that time?):",
+                            choices2)
   )
 )
 
@@ -96,45 +98,59 @@ server <- function(input, output, session) {
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
     if(is.null(input$LOC)){
-      tabledata1<-getSQL(c("SELECT LONGITUDE, LATITUDE, START_LOCATION FROM MOVEMENT, coordinates WHERE 
-                         movement.START_LOCATION = coordinates.LOCATION and 
-                           unix_start = ", input$T1, " AND 
-                           UNIX_END = ", input$T2, " AND 
-                           LONGITUDE > 0;")
+      tabledata1<-getSQL(c("select t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+(select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
+                           unix_start = ", input$T1, " AND
+                           UNIX_END = ", input$T2," AND
+                           movement.START_LOCATION = coordinates.LOCATION and
+                           longitude > 0) t1
+                           inner join
+                           (select movement.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement,coordinates where
+                           unix_start = ", input$T1, " AND
+                           UNIX_END = ", input$T2," AND
+                           movement.Dest_location = coordinates.LOCATION AND
+                           longitude > 0) t2
+                           where
+                           t1.unix_start = t2.unix_start and
+                           t1.unix_end = t2.unix_end and
+                           t1.start_location = t2.START_LOCATION and
+                           t1.dest_location = t2.dest_location;")
                          ,TRUE)
-      tabledata2<-getSQL(c("SELECT LONGITUDE, LATITUDE, DEST_LOCATION FROM MOVEMENT, coordinates WHERE 
-                           movement.DEST_LOCATION = coordinates.LOCATION and 
-                           unix_start = ", input$T1, " AND 
-                           UNIX_END = ", input$T2," AND 
-                           LONGITUDE > 0;"),TRUE)
     }else{
-      tabledata1<-getSQL(c("SELECT LONGITUDE, LATITUDE, START_LOCATION FROM MOVEMENT, coordinates WHERE 
-                         movement.START_LOCATION = coordinates.LOCATION and 
-                           unix_start = ", input$T1, " AND 
-                           UNIX_END = ", input$T2, " AND
+      tabledata1<-getSQL(c("select t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+(select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
+                           unix_start = ", input$T1, " AND
+                           UNIX_END = ", input$T2," AND
                            START_LOCATION = '", input$LOC, "' AND 
-                           LONGITUDE > 0;")
+                           movement.START_LOCATION = coordinates.LOCATION and
+                           longitude > 0) t1
+                           inner join
+                           (select movement.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement,coordinates where
+                           unix_start = ", input$T1, " AND
+                           UNIX_END = ", input$T2," AND
+                           START_LOCATION = '", input$LOC, "' AND 
+                           movement.Dest_location = coordinates.LOCATION AND
+                           longitude > 0) t2
+                           where
+                           t1.unix_start = t2.unix_start and
+                           t1.unix_end = t2.unix_end and
+                           t1.start_location = t2.START_LOCATION and
+                           t1.dest_location = t2.dest_location;")
                          ,TRUE)
-      tabledata2<-getSQL(c("SELECT LONGITUDE, LATITUDE, DEST_LOCATION FROM MOVEMENT, coordinates WHERE 
-                           movement.DEST_LOCATION = coordinates.LOCATION and 
-                           unix_start = ", input$T1, " AND 
-                           UNIX_END = ", input$T2," AND 
-                           START_LOCATION = '", input$LOC, "' AND 
-                           LONGITUDE > 0;"),TRUE)
     }
 
                        
     leaflet(subzone) %>%
       addTiles() %>% 
-      addMarkers(data = tabledata1,~ LATITUDE,~ LONGITUDE,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
-      addMarkers(data = tabledata2,~ LATITUDE,~ LONGITUDE,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      addMarkers(data = tabledata1,~ STARTLAT,~ STARTLONG,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
+      addMarkers(data = tabledata1,~ DESTLAT,~ DESTLONG,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
       addPolygons(color = "white")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
       addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
       addLegend(position = 'bottomright',opacity = 0.4, 
-                colors = c('green','red'), 
-                labels = c('Starting Time','Ending Time'),
+                colors = c('green','red','grey'), 
+                labels = c('Starting Time','Ending Time','Screen Grey: No Destination Coordinate.'),
                 title = 'Spatial network analytics')%>%
       addLayersControl(position = 'bottomright',
                        baseGroups = c("Topographical", "Road map", "Satellite"),
