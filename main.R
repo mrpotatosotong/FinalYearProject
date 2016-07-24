@@ -94,6 +94,7 @@ server <- function(input, output, session) {
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
     tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T1)
+    print(tabledata1)
     tabledata2<- detect(input$T2,input$T1)
     leaflet(subzone) %>%
       addTiles() %>% 
