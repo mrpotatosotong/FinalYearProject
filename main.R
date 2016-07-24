@@ -7,20 +7,18 @@
 
 
 library(shiny)
-library(shinyBS)
 library(leaflet)
 library(rgdal)
-library(DBI)
 library(RMySQL)
 
 #Function GetQuery with SQL and parameter inputs
 getSQL <- function(SQL, parameter = FALSE){
   #Creation of database connection
   dbhandle <- dbConnect(MySQL(),dbname="test",username="root", password="VFR4cde3")
-  if(parameter != FALSE){
-    print(parameter)
-    print(sprintf(SQL,parameter))
-    SQL <- sprintf(SQL,parameter)
+  print(parameter)
+  print(paste(SQL,collapse = ""))
+  if(any(parameter != FALSE)){
+    SQL <- paste(SQL,collapse = "")
   }
   result <- dbGetQuery(dbhandle, SQL)
   cons <- dbListConnections(MySQL())
@@ -43,16 +41,10 @@ convertLocalTimetoUnix<- function(localtime,format = "%Y-%m-%d %H:%M:%S"){
 }
 
 #Setting up data binding from database for time dropdown
-timequery <- getSQL("SELECT UNIX_TIME, from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i') AS TS FROM STARHUB s WHERE minute(from_unixtime(UNIX_TIME, '%Y-%m-%d %H:%i')) % 5 = 0 GROUP BY TS ORDER BY TS;")
-choices <- setNames(timequery$UNIX_TIME,timequery$TS)
-
-detect <- function(timing,timing2){
-  if(timing <= timing2){
-    timing = timing2
-  }
-  return(getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",timing))
-}
-
+timequery <- getSQL("SELECT UNIX_START, from_unixtime(UNIX_START+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_START, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
+timequery2 <- getSQL("SELECT UNIX_END, from_unixtime(UNIX_END+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_END, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
+choices <- setNames(timequery$UNIX_START,timequery$TS)
+choices2 <- setNames(timequery2$UNIX_END,timequery2$TS)
 
 #Creation of Shiny UI Web Interface
 ui <- bootstrapPage(
@@ -64,7 +56,7 @@ ui <- bootstrapPage(
                             choices),
                 selectInput("T2",
                             label = "Time 2:",
-                            choices,selected = tail(choices,1))
+                            choices2)
   )
 )
 
@@ -86,8 +78,6 @@ markerList <- iconList(
     shadowAnchorX = 4, shadowAnchorY = 62
   )
 )
-
-
 #Creation of Server
 server <- function(input, output, session) {
   
@@ -95,13 +85,11 @@ server <- function(input, output, session) {
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    tabledata1<-getSQL("SELECT * FROM starhub WHERE UNIX_TIME=%s;",input$T1)
-    tabledata2<- detect(input$T2,input$T1)
+    tabledata1<-getSQL(c("SELECT * FROM MOVEMENT, coordinates WHERE movement.START_LOCATION = coordinates.LOCATION and unix_start = ", input$T1, " ;"),TRUE)
     leaflet(subzone) %>%
       addTiles() %>% 
-      
-      addMarkers(data = tabledata1, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
-      addMarkers(data = tabledata2, lng = ~ LONGITUDE, lat = ~ LATITUDE, popup = ~ S_ID, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      addMarkers(data = tabledata1,~ LATITUDE,~ LONGITUDE,popup = ~LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
+      #addMarkers(data = tabledata2,~ LATITUDE,~ LONGITUDE,popup = ~LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
       addPolygons(color = "purple")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%

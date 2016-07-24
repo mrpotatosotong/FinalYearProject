@@ -1,4 +1,4 @@
-DROP TABLE IF exists movement;
+##DROP TABLE IF exists movement;
 
 CREATE TABLE IF NOT EXISTS `movement` (
     PRIMARY KEY (`UNIX_START`,`UNIX_END`,`START_LOCATION`,`DEST_LOCATION`),
@@ -10,4 +10,4 @@ CREATE TABLE IF NOT EXISTS `movement` (
 )  ENGINE=InnoDB;
 
 SELECT count(*) FROM MOVEMENT;
-select * from movement where count > 1;
+select * from movement where count > 1 order by count desc;
