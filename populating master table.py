@@ -28,7 +28,8 @@ def geopy(location):
         return('%s,%s'%(lat,lon))
 
 def getLatLon(loca):
-    if(loca in locationWeHave):
+    if(False):
+        #loca in locationWeHave):
         return
     else:
         prep = query%loca

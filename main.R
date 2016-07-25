@@ -7,7 +7,8 @@
 
 #By MrPotato for FYP AY2016/2017 Semester 3 Year 3. Contact Telegram @iamttl and @ShintoSamy
 
-
+library(foreach)
+library(iterators)
 library(shiny)
 library(leaflet)
 library(rgdal)
@@ -98,7 +99,7 @@ server <- function(input, output, session) {
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
     if(is.null(input$LOC)){
-      tabledata1<-getSQL(c("select t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
 (select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
@@ -111,13 +112,10 @@ server <- function(input, output, session) {
                            movement.Dest_location = coordinates.LOCATION AND
                            longitude > 0) t2
                            where
-                           t1.unix_start = t2.unix_start and
-                           t1.unix_end = t2.unix_end and
-                           t1.start_location = t2.START_LOCATION and
-                           t1.dest_location = t2.dest_location;")
+                           t1.movement_id = t2.movement_id;")
                          ,TRUE)
     }else{
-      tabledata1<-getSQL(c("select t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
 (select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
@@ -132,18 +130,18 @@ server <- function(input, output, session) {
                            movement.Dest_location = coordinates.LOCATION AND
                            longitude > 0) t2
                            where
-                           t1.unix_start = t2.unix_start and
-                           t1.unix_end = t2.unix_end and
-                           t1.start_location = t2.START_LOCATION and
-                           t1.dest_location = t2.dest_location;")
+                           t1.movement_id = t2.movement_id;")
                          ,TRUE)
     }
-
-                       
+    
+    ipeople <- iter(tabledata1, by = "row")
     leaflet(subzone) %>%
       addTiles() %>% 
       addMarkers(data = tabledata1,~ STARTLAT,~ STARTLONG,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
       addMarkers(data = tabledata1,~ DESTLAT,~ DESTLONG,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      for(i in 1:nrow(data)){
+      addPolylines(data = tabledata1, lat = as.numeric(data[i,c(3,6)]),lng = as.numeric(data[i,c(2,5)]))
+      }
       addPolygons(color = "white")%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
