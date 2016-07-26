@@ -1,11 +1,5 @@
-<<<<<<< HEAD
-DROP TABLE IF EXISTS movement;
-
-=======
->>>>>>> origin/master
 CREATE TABLE IF NOT EXISTS movement (
-PRIMARY KEY (MOVEMENT_ID),
-#PRIMARY KEY (UNIX_START,UNIX_END,START_LOCATION,DEST_LOCATION),
+PRIMARY KEY (UNIX_START,UNIX_END,START_LOCATION,DEST_LOCATION),
 MOVEMENT_ID INT NOT NULL AUTO_INCREMENT,
 UNIX_START INT(10) NOT NULL,
 UNIX_END INT(10) NOT NULL,
@@ -14,6 +8,6 @@ DEST_LOCATION VARCHAR(50) NOT NULL,
 COUNT INT NULL
 )  ENGINE=InnoDB;
 
-select * from movement where count > 1 order by count desc;
+select count(*) from movement;
 SELECT *, substring(COORD, 1, instr(COORD,',')-1) as LONGITUDE, substring(COORD, instr(COORD,',')+1) as LATITUDE FROM movement,coordinates WHERE UNIX_START=1440000000 AND movement.START_LOCATION = coordinates.LOCATION;
 SELECT * FROM MOVEMENT, coordinates WHERE movement.START_LOCATION = coordinates.LOCATION and unix_start = 14400000;

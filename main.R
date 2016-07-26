@@ -27,6 +27,7 @@ getSQL <- function(SQL, parameter = FALSE){
   cons <- dbListConnections(MySQL())
   for(con in cons)
     dbDisconnect(con)
+  print(result)
   return(result)
 }
 
@@ -99,7 +100,7 @@ server <- function(input, output, session) {
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
     if(is.null(input$LOC)){
-      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT, t1.count as count from
 (select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
@@ -115,7 +116,7 @@ server <- function(input, output, session) {
                            t1.movement_id = t2.movement_id;")
                          ,TRUE)
     }else{
-      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT from
+      tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT, t1.count as count from
 (select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
@@ -135,14 +136,19 @@ server <- function(input, output, session) {
     }
     
     ipeople <- iter(tabledata1, by = "row")
-    leaflet(subzone) %>%
-      addTiles() %>% 
+    leaflet(subzone)%>%
+      addTiles() %>%
+      addPolygons(color = "white")%>%
       addMarkers(data = tabledata1,~ STARTLAT,~ STARTLONG,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
       addMarkers(data = tabledata1,~ DESTLAT,~ DESTLONG,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
-      for(i in 1:nrow(data)){
-      addPolylines(data = tabledata1, lat = as.numeric(data[i,c(3,6)]),lng = as.numeric(data[i,c(2,5)]))
-      }
-      addPolygons(color = "white")%>%
+      {
+        for(i in 1:nrow(tabledata1)){
+          . <- addPolylines(.,data = tabledata1[i,], c(tabledata1[i,]$STARTLAT,tabledata1[i,]$DESTLAT), c(tabledata1[i,]$STARTLONG,tabledata1[i,]$DESTLONG),
+                            color = "red",popup = ~count, weight = ~count*3)
+        }
+        return(.)
+      }%>%
+      #addPolylines(data = tabledata1[1:nrow(tabledata1),], c(tabledata1$STARTLAT,tabledata1$DESTLAT), c(tabledata1$STARTLONG,tabledata1$DESTLONG), color = "black", weight = 10)%>%
       addProviderTiles("Thunderforest.Landscape", group = "Topographical") %>%
       addProviderTiles("OpenStreetMap.Mapnik", group = "Road map") %>%
       addProviderTiles("Esri.WorldImagery", group = "Satellite") %>%
