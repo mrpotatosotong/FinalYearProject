@@ -4,10 +4,9 @@ cnx = mysql.connector.connect(user='root', host = '127.0.0.1', password = 'VFR4c
                              , database = 'test')
 cur = cnx.cursor()
 
-sqlStep1 = "SELECT S_ID, LOCATION, UNIX_TIMESTAMP('2015-08-20 %(start)d:00:00') FROM starhub WHERE UNIX_TIME BETWEEN UNIX_TIMESTAMP('2015-08-20 %(start)d:00:00') AND UNIX_TIMESTAMP('2015-08-20 %(start)d:59:00') GROUP BY S_ID;"
-#sqlStep2 = "SELECT LOCATION, UNIX_TIME FROM starhub WHERE UNIX_TIME = UNIX_TIMESTAMP('2015-08-20 %(endtime)d:00:00') AND S_ID = '%(s_id)s' AND LOCATION != '%(location)s';"
-sqlStep2 = "SELECT LOCATION, UNIX_TIMESTAMP('2015-08-20 %(endtime)d:00:00') FROM starhub WHERE UNIX_TIME BETWEEN UNIX_TIMESTAMP('2015-08-20 %(endtime)d:00:00') AND UNIX_TIMESTAMP('2015-08-20 %(endtime)d:59:00') AND S_ID = '%(s_id)s' AND LOCATION != '%(location)s';"
-sqlInsertMovement = "INSERT INTO `test`.`movement`(`UNIX_START`,`UNIX_END`,`START_LOCATION`,`DEST_LOCATION`,`COUNT`) VALUES(%(unixstart)d,%(unixend)d,'%(start)s','%(dest)s',1);"
+sqlStep1 = "SELECT S_ID, LOCATION, UNIX_TIMESTAMP('2015-08-20 %(start)d:00:00') FROM starhub WHERE UNIX_TIME BETWEEN UNIX_TIMESTAMP('2015-08-20 %(start)d:00:00') AND UNIX_TIMESTAMP('2015-08-20 %(start)d:01:00') GROUP BY S_ID;"
+sqlStep2 = "SELECT LOCATION, UNIX_TIMESTAMP('2015-08-20 %(endtime)d:00:00') FROM starhub WHERE UNIX_TIME BETWEEN UNIX_TIMESTAMP('2015-08-20 %(endtime)d:00:00') AND UNIX_TIMESTAMP('2015-08-20 %(endtime)d:59:59') AND S_ID = '%(s_id)s' AND LOCATION != '%(location)s';"
+sqlInsertMovement = "INSERT INTO `test`.`movement`(`movement_id`,`UNIX_START`,`UNIX_END`,`START_LOCATION`,`DEST_LOCATION`,`COUNT`) VALUES(%(movement_id)d,%(unixstart)d,%(unixend)d,'%(start)s','%(dest)s',1);"
 sqlUpdateCount = "UPDATE `test`.`movement` SET `COUNT` = `COUNT` + 1 WHERE `UNIX_START` = %(unixstart)d AND `UNIX_END` = %(unixend)d AND `START_LOCATION` = '%(start)s' AND `DEST_LOCATION` = '%(dest)s';"
 sqlSelectMovement = "SELECT COUNT(*) AS c FROM movement WHERE UNIX_START = %(unixstart)d AND UNIX_END = %(unixend)d AND `START_LOCATION` = '%(start)s' AND `DEST_LOCATION` = '%(dest)s';"
 
@@ -21,6 +20,7 @@ def escape(string):
     return string.replace("'","\\'")
 
 totalMovement = 0
+numMovement = 0
 
 while(runninghourInt <= 22):
         
@@ -34,7 +34,6 @@ while(runninghourInt <= 22):
     step1data = cur.fetchall()
     print("data obtained, adding movements")
     numSID = 0
-    numMovement = 0
     numUpdate = 0
     for(S_ID, LOCATION, UNIX_TIME) in step1data:
         numSID = numSID + 1
@@ -59,6 +58,7 @@ while(runninghourInt <= 22):
             if(thereOrNot == False):           
                 continue
             dataSelectMovement = {
+                'movement_id': numMovement,
                 'unixstart': unixstart,
                 'unixend': unixend,
                 'start': escape(startlocation),

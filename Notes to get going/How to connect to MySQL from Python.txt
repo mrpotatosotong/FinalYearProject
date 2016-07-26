@@ -1,0 +1,35 @@
+Uninstall any current Python and WingIDE.
+
+Download latest python from:
+https://www.python.org/downloads/
+https://www.python.org/ftp/python/3.5.2/python-3.5.2.exe
+
+Run the installer. (IMPORTANT STEP BELOW)
+
+Click checkboxes that says says 'system paths' 'environment'. You need this to install Python's library in Command Prompt.
+
+Install Python
+
+Once installed restart laptop.
+
+Run Command Prompt as Administrator
+
+Key in 'pip install mysql-connector'
+
+If they ask you update pip, just update.
+
+If there is any issues check these links. These are those we encountered:
+https://www.google.com.sg/search?client=opera&q=Unable+to+find+vcvarsall.bat&sourceid=opera&ie=UTF-8&oe=UTF-8
+http://www.pandastack.com/unable-to-find-vcvarsall-bat-how-to-fix-on-windows/
+https://dev.mysql.com/doc/connector-python/en/connector-python-installation-source.html
+
+Once sucessfully installed good to go.
+import mysql.connector
+
+-----geopy------
+This API is not needed to run database from python, but needed to translate location to co-ordinates
+
+pip install geopy
+(Administrator CMD)
+
+from geopy.geocoders import Nominatim
