@@ -1,0 +1,11 @@
+Study other methods to add lines
+Current method of using for loop to add individual lines against each rows in data frame is too slow.
+
+
+Study GGMaps, Alternative to Leaflet (See Rplot.pdf. Is leaflet best for the project's purpose?)
+p <- ggmap(get_map('Singapore', zoom=11))
+start_pt <- data.frame(lat=c(1.36131), lon=c(103.8121))
+end_pts <- data.frame(lat=c(1.36692,1.31692,1.42592,1.35692,1.29592,1.42592), lon=c(103.83627,103.68627,103.68627,103.70627,103.8121,103.8521))
+black_lines <- data.frame (lat=c(1.36131,1.36692,1.36131,1.31692,1.36131,1.42592), lon=c(103.8121, 103.83627,103.8121,103.68627,103.8121,103.68627))
+orange_lines <- data.frame(lat=c(1.36131,1.35692,1.36131,1.29592,1.36131,1.42592), lon=c(103.8121,103.70627,103.8121,103.8121,103.8121,103.8521))
+p + geom_point(data=start_pt, aes(x=lon, y=lat),color="yellow",size=5) + geom_point(data=end_pts, aes(x=lon, y=lat),color="red",size=1) + geom_path(data=black_lines, aes(x=lon, y=lat), color="black", size=0.75, arrow=arrow(angle=5,  length=unit(0.25, "cm"), ends="last")) + geom_path(data=orange_lines, aes(x=lon, y=lat), color="orange", size=0.75, arrow=arrow(angle=5,  length=unit(0.25, "cm"), ends="last"))

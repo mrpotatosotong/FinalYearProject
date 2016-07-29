@@ -4,6 +4,8 @@ Download latest python from:
 https://www.python.org/downloads/
 https://www.python.org/ftp/python/3.5.2/python-3.5.2.exe
 
+Download latest WingIDE
+
 Run the installer. (IMPORTANT STEP BELOW)
 
 Click checkboxes that says says 'system paths' 'environment'. You need this to install Python's library in Command Prompt.
