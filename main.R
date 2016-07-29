@@ -45,11 +45,12 @@ convertLocalTimetoUnix<- function(localtime,format = "%Y-%m-%d %H:%M:%S"){
 }
 
 #Setting up data binding from database for time dropdown
-timequery <- getSQL("SELECT UNIX_START, from_unixtime(UNIX_START+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_START, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
-timequery2 <- getSQL("SELECT UNIX_END, from_unixtime(UNIX_END+28800, '%Y-%m-%d %H:%i') AS TS FROM MOVEMENT s WHERE hour(from_unixtime(UNIX_END, '%Y-%m-%d %H:%i')) % 1 = 0 GROUP BY TS ORDER BY TS;")
-
-choices <- setNames(timequery$UNIX_START,timequery$TS)
-choices2 <- setNames(timequery2$UNIX_END,timequery2$TS)
+timequery <- getSQL("SELECT * FROM TIMEDROPDOWNLIST;")
+timequery2 <- getSQL("SELECT * FROM TIMEDROPDOWNLIST;")
+locationquery <- getSQL("SELECT LOCATION FROM COORDINATES;")
+choicesloc <- setNames(locationquery$LOCATION,locationquery$LOCATION)
+choices <- setNames(timequery$UNIX_TIME,timequery$READ_TIME)
+choices2 <- setNames(timequery$UNIX_TIME,timequery$READ_TIME)
 
 #Creation of Shiny UI Web Interface
 ui <- bootstrapPage(
@@ -57,78 +58,71 @@ ui <- bootstrapPage(
   leafletOutput("map", width = "100%", height = "100%"),
   absolutePanel(top = 10, right = 10,
                 selectInput("T1",
-                            label = "Start Time (Everyone who is at this location at this time...):",
-                            choices),
-                uiOutput("areaSelector"),
+                            label = "Start Time (Where everyone at this time?):",
+                            choices,selected = '1440000000'),
+                #uiOutput("areaSelector"),
+                selectInput("LOC",
+                            label = "At this location?:",
+                            choicesloc,selected = 'Admiralty'),
                 selectInput("T2",
-                            label = "End Time (...where did they go at that time?):",
-                            choices2)
+                            label = "Will be at this time?:",
+                            choices2,selected = '1440003600')
   )
 )
 
 markerList <- iconList(
   before = makeIcon(
-    iconUrl = "http://leafletjs.com/docs/images/leaf-green.png",
-    iconWidth = 38, iconHeight = 95,
-    iconAnchorX = 22, iconAnchorY = 94,
-    shadowUrl = "http://leafletjs.com/docs/images/leaf-shadow.png",
-    shadowWidth = 50, shadowHeight = 64,
-    shadowAnchorX = 4, shadowAnchorY = 62
+    iconUrl = "images/starhubgreen.png",
+    iconWidth = 45, iconHeight = 59
   ),
   after = makeIcon(
-    iconUrl = "http://leafletjs.com/docs/images/leaf-red.png",
-    iconWidth = 38, iconHeight = 95,
-    iconAnchorX = 22, iconAnchorY = 94,
-    shadowUrl = "http://leafletjs.com/docs/images/leaf-shadow.png",
-    shadowWidth = 50, shadowHeight = 64,
-    shadowAnchorX = 4, shadowAnchorY = 62
+    iconUrl = "images/starhubred.png",
+    iconWidth = 45, iconHeight = 59
   )
 )
 #Creation of Server
 server <- function(input, output, session) {
   
-  output$areaSelector <- renderUI({
-    locationquery <- getSQL(c("SELECT DISTINCT START_LOCATION FROM MOVEMENT WHERE unix_start = ", input$T1, " AND 
-                         UNIX_END = ", input$T2, ";"),TRUE)
-    choicesloc <- setNames(locationquery$START_LOCATION,locationquery$START_LOCATION)
-    selectInput("LOC",
-                label = "Starting Location:",
-                choicesloc)
-  })
+  #output$areaSelector <- renderUI({})
+  
+  
   #Calling server to output the map 
   output$map <- renderLeaflet({
     #Storing all the data in variable 'data' so that when the selectInput selects a timing,...
     #...it will switch to the file that shows the timing
-    if(is.null(input$LOC)){
+    if(input$LOC == '.No Location' && input$T2 == '0'){
+      tabledata1 <- getSQL(c("SELECT START_LOCATION, LONGITUDE AS STARTLONG, LATITUDE AS STARTLAT FROM MOVEMENT2, COORDINATES WHERE START_LOCATION = LOCATION AND UNIX_START = ",input$T1," GROUP BY START_LOCATION"),TRUE)
+    }
+    else if(input$LOC == '.No Location'){
       tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT, t1.count as count from
-(select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
+(select m.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement2 m,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
-                           movement.START_LOCATION = coordinates.LOCATION and
+                           m.START_LOCATION = coordinates.LOCATION and
                            longitude > 0) t1
                            inner join
-                           (select movement.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement,coordinates where
+                           (select m.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement2 m,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
-                           movement.Dest_location = coordinates.LOCATION AND
+                           m.Dest_location = coordinates.LOCATION AND
                            longitude > 0) t2
                            where
                            t1.movement_id = t2.movement_id;")
                          ,TRUE)
     }else{
       tabledata1<-getSQL(c("select t1.movement_id,  t1.start_location as START_LOCATION, t1.startlong as STARTLONG, t1.startlat as STARTLAT, t2.dest_location as DEST_LOCATION, t2.destlong as DESTLONG, t2.destlat as DESTLAT, t1.count as count from
-(select movement.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement,coordinates where
+(select m.*, coordinates.longitude as startlong, coordinates.latitude as startlat from movement2 m,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
                            START_LOCATION = '", input$LOC, "' AND 
-                           movement.START_LOCATION = coordinates.LOCATION and
+                           m.START_LOCATION = coordinates.LOCATION and
                            longitude > 0) t1
                            inner join
-                           (select movement.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement,coordinates where
+                           (select m.*, coordinates.longitude as destlong, coordinates.latitude as destlat from movement2 m,coordinates where
                            unix_start = ", input$T1, " AND
                            UNIX_END = ", input$T2," AND
                            START_LOCATION = '", input$LOC, "' AND 
-                           movement.Dest_location = coordinates.LOCATION AND
+                           m.Dest_location = coordinates.LOCATION AND
                            longitude > 0) t2
                            where
                            t1.movement_id = t2.movement_id;")
@@ -140,11 +134,18 @@ server <- function(input, output, session) {
       addTiles() %>%
       addPolygons(color = "white")%>%
       addMarkers(data = tabledata1,~ STARTLAT,~ STARTLONG,popup = ~START_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["before"])%>%
-      addMarkers(data = tabledata1,~ DESTLAT,~ DESTLONG,popup = ~DEST_LOCATION, clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      addMarkers(data = tabledata1,~ DESTLAT,~ DESTLONG,popup = paste(sep="</br>",tabledata1$START_LOCATION,tabledata1$DEST_LOCATION,tabledata1$count), clusterOptions = markerClusterOptions(), icon = ~markerList["after"])%>%
+      
       {
         for(i in 1:nrow(tabledata1)){
           . <- addPolylines(.,data = tabledata1[i,], c(tabledata1[i,]$STARTLAT,tabledata1[i,]$DESTLAT), c(tabledata1[i,]$STARTLONG,tabledata1[i,]$DESTLONG),
-                            color = "red",popup = ~count, weight = ~count*3)
+                            color = "green",popup = ~count, weight = ~count*3)
+        }
+        return(.)
+        for(i in 1:nrow(tabledata1)){
+          content = paste(sep="</br>",tabledata1[i,]$START_LOCATION,tabledata1[i,]$DEST_LOCATION,tabledata1[i,]$count)
+          . <-  addPopups(.,tabledata1[i,]$DESTLAT, tabledata1[i,]$DESTLONG, content,
+                          options = popupOptions(closeButton = TRUE))
         }
         return(.)
       }%>%
