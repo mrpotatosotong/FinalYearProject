@@ -1,0 +1,16 @@
+What I do:
+geopy(location)
+addPolyline(data: table, latitude = c(starting latitude,ending latitude), longitude = c(starting longtitude, ending longitude), color = "color", weight = "0")
+
+What are the challenges I face and I overcome it:
+  The Geopy method need additional module in python to run. Researched and downloaded a file is suppose to run and download geopy, but it did not work.
+Teng Long step in and help me install the module as he was downloading another module for mysql in python. After that I tried, the geopy was working.
+
+  Another challenge I was faced was addPolyline(). I did not know how to add line to the map, so I went to google to find add line for Rstudio. But, the 
+search engine returns adding line for rstudio for graph, not for visual maps. Had a hard time searching for simple example, until I came across add
+shapes for Rstudio. The problem was the shape are not flexible enought to change into an arrow, therefore I gave up on the idea and searched other
+ways. Then I change my search to "how to connect multiple coordinate", it returns 2 different way, spartial lines and add polylines. Spartial was too 
+hard to understand, therefore, I focus on add polyline. But add polyline had a problem, it will connect all the coordinate that is given to the method.
+
+  So I had to searched how to seperate the lines. There were two ways, using for loop and using grouping from the method. The for loop gave me error and
+we were running short of time. I went to tried grouping after that while Teng Long decided to help me and manage to get the for loop running.

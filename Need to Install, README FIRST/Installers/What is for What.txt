@@ -1,0 +1,12 @@
+emed is to read large text  files
+program name is EmEditor
+
+python 3.5.1 is the requirement to interpret python codes
+WingIDE for python development environment
+
+R-3.3.1 same as python 3.5.1. To install R binaries on your system
+RStudio the IDE for R.
+
+
+
+These are already installed on the VM, along libraries we worked with.

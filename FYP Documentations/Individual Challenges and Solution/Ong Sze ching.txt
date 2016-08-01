@@ -1,0 +1,24 @@
+What i do:
+- Creating databse
+- Running the database in the python
+
+Challenges:
+1. Text file is to big to open in as text.  
+2. Getting to understand the text file data. 
+3. Inserting the text file into the python. 
+4. Running 4bg of data in python. 
+5. Linking python to database at sql. 
+6. Error of not able to link, error not able to run at mysql. 
+
+How did i approach: 
+1. Download emedtior to open the text file. 
+2. 4 rows of data which respresnt (S_ID, UNIX_TIME, SESSION, LOCATION)
+3. Inserting the text file using : with open('DATA_FOR_RPMASTER.txt') as f. 
+4. inserting the data: 
+with open("DATA_FOR_RPMASTER.txt","r") as f:
+    for line in f:
+        counter = counter + 1 
+        print(counter)
+this is to count the number of row we have. 
+5. Have to create the table at mysql then follow by linking up the data in python into the sql. 
+6. Some syntx error appear in the python. 

@@ -1,3 +1,0 @@
-With the default installation of RStudio there will be missing libraries that we used.
-
-install.packages("leaflet")

@@ -1,0 +1,19 @@
+#This file shows the defination for addPolyline method in leaflet.
+
+//Tabledata1 is a sql satement.
+
+addPolylines(.,data = tabledata1[i,], c(tabledata1[i,]$STARTLAT,tabledat1[i,]$DESTLAT), c(tabledata1[i,]$STARTLONG,tabledata1[i,]$DESTLONG),
+                            color = "green",popup = ~count, weight = ~count*3)
+
+>addPolylines() : The function from leaflet that allow the adding of line.
+>data = tabledata1[1,]: take data from tabledata[1,].
+>c(tabledata1[i,]$STARTLAT,tabledata1[1,]$DESTLAT) : bind the starting latitude and destination latitude from tabledata1
+>c(tabledata1[1,]$STARTLONG, tabledata1[1,]$DESTLONG) : bind the starting longitude and destionation latitude from tabledata1.
+>color = "green" : color of the line will be green.
+>popup = ~count: When the line is clicked, it will show the total amount of movement.
+>weight = ~weight*3: The line thickness is the total number of movement x 3.
+
+CheatSheat:
+addPolylines(.,data = tabledata x; c(int lat1, int lat2), c(int lon1, int lon2), color = string color, popup = string/ int x, weight = int)
+
+For reference for addPolylines methood: https://cran.r-project.org/web/packages/leaflet/leaflet.pdf

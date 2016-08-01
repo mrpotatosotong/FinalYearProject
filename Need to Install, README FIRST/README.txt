@@ -1,0 +1,1 @@
+To avoid problems with 'file not found' error in R studio, always open the project by opening FinalYearProject.Rproj

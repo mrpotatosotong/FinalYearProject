@@ -1,0 +1,3 @@
+With the default installation of R there will be missing libraries that we used.
+
+install.packages("leaflet")
